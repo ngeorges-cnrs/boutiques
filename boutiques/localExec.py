@@ -666,7 +666,7 @@ class LocalExecutor:
 
     # Chooses whether to use Docker or Singularity based on the
     # descriptor, executor options and if Docker is installed.
-    # XXX doc return value + logic cleanup
+    # Returns image type and container binary name
     def _chooseContainerTypeToUse(self, conType, forceSing=False,
                                   forceApptainer=False, forceDocker=False):
         if (
