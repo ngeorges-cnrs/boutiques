@@ -530,7 +530,7 @@ class LocalExecutor:
         # If container is present, alter the command template accordingly
         conName = ""
 
-        if conTypeToUse is None:
+        if conTypeToUse is None or conBinName is None:
             (conTypeToUse, conBinName) = self._chooseContainerTypeToUse(conType)
 
         if conTypeToUse == "docker":
