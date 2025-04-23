@@ -412,10 +412,14 @@ class LocalExecutor:
                 userchange = ""
                 if self.changeUser:
                     userchange = " -u $(id -u):$(id -g)"
+                pullmode = ""
+                if self.noPull:
+                    pullmode = "--pull=never"
 
                 container_command = (
                     "docker run"
                     + userchange
+                    + pullmode
                     + " --entrypoint="
                     + self.shell
                     + " --rm"
@@ -534,7 +538,7 @@ class LocalExecutor:
 
         if conTypeToUse == "docker":
             # Pull the docker image
-            if self._localExecute("docker pull " + str(conImage))[1]:
+            if self.noPull or self._localExecute("docker pull " + str(conImage))[1]:
                 container_location = "Local copy"
             else:
                 container_location = "Pulled from Docker"
@@ -573,6 +577,8 @@ class LocalExecutor:
             if self._singConExists(conName, imageDir):
                 conPath = op.abspath(op.join(imageDir, conName))
                 return conPath, f"Local ({conName})"
+            if self.noPull:
+                raise_error(ExecutorError, "Unable to retrieve Singularity " "image.")
 
             # Container does not exist, try to pull it
             if self.imagePath:

@@ -389,6 +389,12 @@ def add_subparser_execute(subparsers):
         "descriptor, it is ignored.",
     )
     parser_exec_launch.add_argument(
+        "--no-pull",
+        action="store_true",
+        help="Do not automatically pull the container image. Execution "
+        "will fail if the image is not found locally."
+    )
+    parser_exec_launch.add_argument(
         "--sandbox",
         action="store_true",
         help="Get descriptor from Zenodo's sandbox instead of " "production server.",
