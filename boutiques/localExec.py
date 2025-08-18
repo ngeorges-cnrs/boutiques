@@ -246,9 +246,9 @@ class LocalExecutor:
             (con.get("image") if not self.noContainer else None),
         )
         conIndex = con.get("index")
-        # always keep conOpts when container runtime is forced
-        forcedRuntime = self._getForcedContainerRuntime()
-        conOptsForced = conOpts is not None and forcedRuntime is not None
+        # always preserve conOpts when container command is forced
+        conForcedCommand = self._getContainerForcedCommand()
+        conOptsForced = conOpts is not None and conForcedCommand is not None
         conOpts = conOpts or con.get("container-opts")
         conIsPresent = conImage is not None
         # Export environment variables,
@@ -282,7 +282,7 @@ class LocalExecutor:
         if conIsPresent:
             # Figure out which container type to use
             (conTypeToUse, conBinName) = self._chooseContainerTypeToUse(
-                conType, forcedRuntime
+                conType, conForcedCommand
             )
             # Pull the container
             (conPath, container_location) = self.prepare(conTypeToUse, conBinName)
@@ -671,7 +671,8 @@ class LocalExecutor:
     def _isCommandInstalled(self, command):
         return not subprocess.Popen(f"{command} --version", shell=True).wait()
 
-    def _getForcedContainerRuntime(self):
+    # Gets forced container command name, if any --force-X flag is set
+    def _getContainerForcedCommand(self):
         if self.forceDocker:
             return "docker"
         if self.forceSingularity:
@@ -683,23 +684,24 @@ class LocalExecutor:
     # Chooses whether to use Docker, Singularity or Apptainer based on the
     # descriptor, executor options and installed commands.
     # Returns image type and container runtime binary name.
-    def _chooseContainerTypeToUse(self, conType, forcedRuntime=None):
-        conBinName = None
-        if forcedRuntime is not None:  # only try the user-selected runtime
-            if self._isCommandInstalled(forcedRuntime):
-                conBinName = forcedRuntime
-        else:  # guess container runtime from descriptor type
+    def _chooseContainerTypeToUse(self, conType, forcedCommand=None):
+        command = None
+        if forcedCommand is not None:  # only check the user-selected command
+            if self._isCommandInstalled(forcedCommand):
+                command = forcedCommand
+        else:  # guess container command from descriptor type
             if conType == "docker" and self._isCommandInstalled("docker"):
-                conBinName = "docker"
+                command = "docker"
             elif self._isCommandInstalled("singularity"):
-                conBinName = "singularity"
+                command = "singularity"
             elif self._isCommandInstalled("apptainer"):
-                conBinName = "apptainer"
-        if conBinName == "docker":
+                command = "apptainer"
+
+        if command == "docker":
             return ("docker", "docker")
-        elif conBinName == "singularity":
+        elif command == "singularity":
             return ("singularity", "singularity")
-        elif conBinName == "apptainer":
+        elif command == "apptainer":
             return ("singularity", "apptainer")
 
         raise_error(
