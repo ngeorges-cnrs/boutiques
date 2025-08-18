@@ -672,33 +672,35 @@ class LocalExecutor:
         return not subprocess.Popen(f"{command} --version", shell=True).wait()
 
     def _getForcedContainerRuntime(self):
-        # XXX order ?
+        if self.forceDocker:
+            return "docker"
         if self.forceSingularity:
             return "singularity"
-        elif self.forceApptainer:
+        if self.forceApptainer:
             return "apptainer"
-        elif self.forceDocker:
-            return "docker"
         return None
 
     # Chooses whether to use Docker, Singularity or Apptainer based on the
     # descriptor, executor options and installed commands.
     # Returns image type and container runtime binary name.
     def _chooseContainerTypeToUse(self, conType, forcedRuntime=None):
-        # XXX style / ifs
-        if forcedRuntime is not None:
+        conBinName = None
+        if forcedRuntime is not None:  # only try the user-selected runtime
             if self._isCommandInstalled(forcedRuntime):
-                if forcedRuntime == "apptainer":
-                    return ("singularity", "apptainer")
-                else:
-                    return (forcedRuntime, forcedRuntime)
-        else:
+                conBinName = forcedRuntime
+        else:  # guess container runtime from descriptor type
             if conType == "docker" and self._isCommandInstalled("docker"):
-                return ("docker", "docker")
-            if self._isCommandInstalled("singularity"):
-                return ("singularity", "singularity")
-            if self._isCommandInstalled("apptainer"):
-                return ("singularity", "apptainer")
+                conBinName = "docker"
+            elif self._isCommandInstalled("singularity"):
+                conBinName = "singularity"
+            elif self._isCommandInstalled("apptainer"):
+                conBinName = "apptainer"
+        if conBinName == "docker":
+            return ("docker", "docker")
+        elif conBinName == "singularity":
+            return ("singularity", "singularity")
+        elif conBinName == "apptainer":
+            return ("singularity", "apptainer")
 
         raise_error(
             ExecutorError,

@@ -736,6 +736,12 @@ class TestExample1(BaseTest):
         else:
             return True
 
+    def docker_singularity_not_installed(command):
+        if command == "docker" or command == "singularity":
+            return False
+        else:
+            return True
+
     @pytest.mark.xfail(reason="Travis to GH action transition")
     @pytest.mark.skipif(
         subprocess.Popen("type singularity", shell=True).wait(),
@@ -764,6 +770,55 @@ class TestExample1(BaseTest):
         )
         self.assertIn("Local (boutiques-example1-test.simg)", ret.container_location)
         self.assertIn("singularity exec", ret.container_command)
+
+    @mock.patch(
+        "boutiques.localExec.LocalExecutor._isCommandInstalled",
+        side_effect=docker_not_installed,
+    )
+    def test_example1_exec_no_runtime(self, mock_docker_not_installed):
+        with pytest.raises(ExecutorError):
+            bosh.execute(
+                "launch",
+                self.example1_descriptor,
+                self.get_file_path("invocation_no_opts.json"),
+                "--skip-data-collection",
+                "--force-docker",
+                "-v",
+                f"{self.get_file_path('example1_mount1')}:/test_mount1",
+                "-v",
+                f"{self.get_file_path('example1_mount2')}:/test_mount2",
+            )
+
+    @pytest.mark.xfail(reason="Travis to GH action transition")
+    @pytest.mark.skipif(
+        subprocess.Popen("type apptainer", shell=True).wait(),
+        reason="Apptainer not installed",
+    )
+    @mock.patch(
+        "boutiques.localExec.LocalExecutor._isCommandInstalled",
+        side_effect=docker_singularity_not_installed,
+    )
+    def test_example1_exec_singularity_not_installed(
+        self, mock_docker_singularity_not_installed
+    ):
+        ret = bosh.execute(
+            "launch",
+            self.example1_descriptor,
+            self.get_file_path("invocation_no_opts.json"),
+            "--skip-data-collection",
+            "-v",
+            f"{self.get_file_path('example1_mount1')}:/test_mount1",
+            "-v",
+            f"{self.get_file_path('example1_mount2')}:/test_mount2",
+        )
+        self.assert_successful_return(
+            ret,
+            ["./test_temp/log-4-coin;plop.txt"],
+            2,
+            self.assert_reflected_output,
+        )
+        self.assertIn("Local (boutiques-example1-test.simg)", ret.container_location)
+        self.assertIn("apptainer exec", ret.container_command)
 
     @pytest.mark.skipif(
         subprocess.Popen("type docker", shell=True).wait(),
