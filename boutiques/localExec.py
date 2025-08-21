@@ -671,7 +671,8 @@ class LocalExecutor:
     def _isCommandInstalled(self, command):
         return not subprocess.Popen(f"{command} --version", shell=True).wait()
 
-    # Gets forced container command name, if any --force-X flag is set
+    # Gets forced container command name, if any --force-X flag is set.
+    # Flags are mutually exclusive so test order doesn't matter.
     def _getContainerForcedCommand(self):
         if self.forceDocker:
             return "docker"
