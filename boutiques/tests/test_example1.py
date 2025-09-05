@@ -1023,7 +1023,7 @@ class TestExample1(BaseTest):
                 self.get_file_path("example1_docker_noimg.json"),
                 invoc,
                 "--skip-data-collection",
-                "--force-singularity", # XXX or split/reuse some other descriptor
+                "--force-singularity", # XXX or split/reuse some other descriptor, cf example1_sing.json. See if $PWD is the same or not across tests, and maybe mock that the local file doesn't exist ? Or skip singularity entirely and make nopull docker-specific (for singularity, we already have imagepath, there might not be a nopull cmd flag on run, and the many possible sources make it complex overall)
                 "--no-pull",
                 "-v",
                 f"{self.get_file_path('example1_mount1')}:/test_mount1",
