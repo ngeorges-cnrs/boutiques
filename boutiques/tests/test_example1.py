@@ -1003,8 +1003,10 @@ class TestExample1(BaseTest):
             "-v",
             f"{self.get_file_path('example1_mount2')}:/test_mount2",
         )
+        # XXX TODO optional error handling, or pre-run docker pull / base image ?
         self.assertIn("--pull=never", ret.container_command)
 
+    # XXX TODO normal base image, mock _singConExists return false
     @pytest.mark.skipif(
         subprocess.Popen("type singularity", shell=True).wait(),
         reason="Singularity not installed",
