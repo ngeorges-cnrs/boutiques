@@ -984,7 +984,7 @@ class TestExample1(BaseTest):
         subprocess.Popen("type docker", shell=True).wait(),
         reason="Docker not installed",
     )
-    def test_example1_exec_docker_no_pull(self):
+    def test_example1_docker_no_pull(self):
         invoc = os.path.join(
             os.path.dirname(bfile),
             "schema",
@@ -994,7 +994,7 @@ class TestExample1(BaseTest):
         )
         ret = bosh.execute(
             "launch",
-            self.get_file_path("example1_docker_noimg.json"),
+            self.example1_descriptor,
             invoc,
             "--skip-data-collection",
             "--no-pull",
@@ -1003,15 +1003,20 @@ class TestExample1(BaseTest):
             "-v",
             f"{self.get_file_path('example1_mount2')}:/test_mount2",
         )
-        # XXX TODO optional error handling, or pre-run docker pull / base image ?
         self.assertIn("--pull=never", ret.container_command)
 
-    # XXX TODO normal base image, mock _singConExists return false
+    def singularity_no_image(conName, imageDir):
+        return False
+
+    @mock.patch(
+        "boutiques.localExec.LocalExecutor._singConExists",
+        side_effect=singularity_no_image,
+    )
     @pytest.mark.skipif(
         subprocess.Popen("type singularity", shell=True).wait(),
         reason="Singularity not installed",
     )
-    def test_example1_exec_singularity_no_pull(self):
+    def test_example1_singularity_no_pull(self, mock_singularity_no_image):
         invoc = os.path.join(
             os.path.dirname(bfile),
             "schema",
@@ -1022,14 +1027,15 @@ class TestExample1(BaseTest):
         with pytest.raises(ExecutorError) as e:
             ret = bosh.execute(
                 "launch",
-                self.get_file_path("example1_docker_noimg.json"),
-                invoc,
+                self.get_file_path("example1_sing.json"),
+                self.get_file_path("invocation_sing.json"),
                 "--skip-data-collection",
-                "--force-singularity", # XXX or split/reuse some other descriptor, cf example1_sing.json. See if $PWD is the same or not across tests, and maybe mock that the local file doesn't exist ? Or skip singularity entirely and make nopull docker-specific (for singularity, we already have imagepath, there might not be a nopull cmd flag on run, and the many possible sources make it complex overall)
                 "--no-pull",
                 "-v",
                 f"{self.get_file_path('example1_mount1')}:/test_mount1",
                 "-v",
                 f"{self.get_file_path('example1_mount2')}:/test_mount2",
             )
-        self.assertIn("Unable to retrieve Singularity image", str(e.getrepr(style="long")))
+        self.assertIn(
+            "Unable to retrieve Singularity image", str(e.getrepr(style="long"))
+        )

@@ -583,11 +583,10 @@ class LocalExecutor:
                 conPath = op.abspath(op.join(imageDir, conName))
                 return conPath, f"Local ({conName})"
 
-            # Container image file does not exist:
-            # - if we can't pull, just fail
+            # Container image does not exist and we can't pull it: just fail
             if self.noPull:
                 raise_error(ExecutorError, "Unable to retrieve Singularity " "image.")
-            # - if we can pull, try to
+            # Try to pull the container image
             if self.imagePath:
                 lockDir = self.imagePath + "-lock"
             else:
